@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: cyber-bay-frontend-cg:latest
+    image: three-tier-frontend-cg:latest
     container_name: cg-frontend
     build: 
       context: ./frontend
@@ -9,7 +9,7 @@ services:
       - backend
 
   backend:
-    image: cyber-bay-backend-cg:latest
+    image: three-tier-backend-cg:latest
     container_name: cg-backend
     build: 
       context: ./backend
@@ -24,8 +24,8 @@ services:
       POSTGRES_PASSWORD: password
 
   db:
-    container_name: cyber-bay-db-cg
-    image: cyber-bay-db-cg:latest
+    container_name: cg-db
+    image: three-tier-db-cg:latest
     build:
       context: ./db
       dockerfile: Dockerfile-chainguard
@@ -39,7 +39,7 @@ services:
       - "5432:5432"
 
   nginx:
-    image: cyber-bay-nginx-cg:latest
+    image: three-tier-nginx-cg:latest
     container_name: cg-nginx
     build:
       context: .
@@ -49,3 +49,7 @@ services:
     depends_on:
       - frontend
       - backend
+
+networks:
+  default:
+    name: three-tier-app_default

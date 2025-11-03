@@ -1,4 +1,4 @@
-# cyber-bay-sample-app
+# three-tier-sample-app
 
 <div align="center">
   <img src="img/qr-code.png" alt="Scan to access repository" width="200"/>
@@ -31,7 +31,7 @@ We will walk through and build this app two different ways and then use a Python
 - Python 3.7+ (for vulnerability reporting)
 - Clone this directory and `cd` into it from your terminal: 
 ```bash
-git clone https://github.com/troy-chainguard-dev/cyber-bay-sample-app.git && cd cyber-bay-sample-app
+cd three-tier-sample-app
 ```
 
 ### Python Virtual Environment Setup
@@ -98,7 +98,7 @@ Expected output:
  ✔ backend Built                           0.0s
  ✔ frontend Built                          0.0s
  ✔ nginx Built                             0.0s
- ✔ Network cyber-bay-sample-app_default    0.1s
+ ✔ Network three-tier-sample-app_default    0.1s
  ✔ Container legacy-db Started             0.3s
  ✔ Container legacy-backend Started        0.3s
  ✔ Container legacy-frontend Started       0.3s
@@ -115,10 +115,10 @@ docker ps
 Expected output:
 ```
 CONTAINER ID   IMAGE                              STATUS         PORTS                    NAMES
-9da02e3b2f76   cyber-bay-nginx-legacy:latest      Up 3 minutes   0.0.0.0:80->80/tcp       legacy-nginx
-26e1462fabb0   cyber-bay-frontend-legacy:latest   Up 3 minutes                            legacy-frontend
-3cc427943561   cyber-bay-backend-legacy:latest    Up 3 minutes   0.0.0.0:5000->5000/tcp   legacy-backend
-22f51e9cdff9   cyber-bay-db-legacy:latest         Up 3 minutes   0.0.0.0:5432->5432/tcp   legacy-db
+9da02e3b2f76   three-tier-nginx-legacy:latest      Up 3 minutes   0.0.0.0:80->80/tcp       legacy-nginx
+26e1462fabb0   three-tier-frontend-legacy:latest   Up 3 minutes                            legacy-frontend
+3cc427943561   three-tier-backend-legacy:latest    Up 3 minutes   0.0.0.0:5000->5000/tcp   legacy-backend
+22f51e9cdff9   three-tier-db-legacy:latest         Up 3 minutes   0.0.0.0:5432->5432/tcp   legacy-db
 ```
 
 Let's start a log view of our containers before we test our app:
@@ -227,8 +227,8 @@ Expected output:
  ✔ backend Built                           0.0s
  ✔ frontend Built                          0.0s
  ✔ nginx Built                             0.0s
- ✔ Network cyber-bay-sample-app_default    0.1s
- ✔ Container cyber-bay-db-cg Started       0.3s
+ ✔ Network three-tier-sample-app_default    0.1s
+ ✔ Container three-tier-db-cg Started       0.3s
  ✔ Container cg-backend Started            0.4s
  ✔ Container cg-frontend Started           0.4s
  ✔ Container cg-nginx Started              0.4s
@@ -244,10 +244,10 @@ docker ps
 Expected output:
 ```
 CONTAINER ID   IMAGE                           STATUS         PORTS                    NAMES
-476abfd23815   cyber-bay-nginx-cg:latest       Up 5 minutes   0.0.0.0:80->80/tcp       cg-nginx
-4a12bab4e30b   cyber-bay-frontend-cg:latest    Up 5 minutes                            cg-frontend
-5151ef168869   cyber-bay-backend-cg:latest     Up 5 minutes   0.0.0.0:5000->5000/tcp   cg-backend
-949fdcf98c9d   cyber-bay-db-cg:latest          Up 5 minutes   0.0.0.0:5432->5432/tcp   cyber-bay-db-cg
+476abfd23815   three-tier-nginx-cg:latest       Up 5 minutes   0.0.0.0:80->80/tcp       cg-nginx
+4a12bab4e30b   three-tier-frontend-cg:latest    Up 5 minutes                            cg-frontend
+5151ef168869   three-tier-backend-cg:latest     Up 5 minutes   0.0.0.0:5000->5000/tcp   cg-backend
+949fdcf98c9d   three-tier-db-cg:latest          Up 5 minutes   0.0.0.0:5432->5432/tcp   three-tier-db-cg
 ```
 
 Let's start a log view of our containers before we test our app:
@@ -263,7 +263,7 @@ Open [http://localhost:80](http://localhost:80) in your browser to view the webs
 Refresh the page and click some 'Register' buttons and look at our logs to see the output. We should see all the various components receiving and passing traffic:
 
 ```
-cyber-bay-db-cg  | 2025-10-10 15:29:49.178 UTC [1] LOG:  database system is ready to accept connections
+three-tier-db-cg  | 2025-10-10 15:29:49.178 UTC [1] LOG:  database system is ready to accept connections
 cg-frontend      | [2025-10-10T15:29:53.667Z] GET / - 172.20.0.5
 cg-nginx         | 172.20.0.1 - - [10/Oct/2025:15:29:53 +0000] "GET / HTTP/1.1" 200 279 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Safari/605.1.15"
 cg-backend       | 172.20.0.5 - - [10/Oct/2025 15:29:53] "GET /courses HTTP/1.0" 200 -
@@ -334,10 +334,10 @@ CMD ["python", "wsgi.py"]
 ```
 **Resulting Image:**
 ```bash
-docker images | grep cyber-bay-backend-legacy
+docker images | grep three-tier-backend-legacy
 ```
 ```
-cyber-bay-backend-legacy latest 4deda6071707 2 days ago 1.64GB
+three-tier-backend-legacy latest 4deda6071707 2 days ago 1.64GB
 ```
 
 **Why is this image so big?**  
@@ -414,10 +414,10 @@ ENTRYPOINT [ "python", "wsgi.py" ]
 
 **Resulting Image:**
 ```bash
-docker images | grep cyber-bay-backend-cg
+docker images | grep three-tier-backend-cg
 ```
 ```
-cyber-bay-backend-cg latest 526d24399c50   23 hours ago    126MB
+three-tier-backend-cg latest 526d24399c50   23 hours ago    126MB
 ```
 
 **What makes Chainguard different?**

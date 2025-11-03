@@ -1,13 +1,13 @@
 services:
   frontend:
-    image: cyber-bay-frontend-legacy:latest
+    image: three-tier-frontend-legacy:latest
     container_name: legacy-frontend
     build: ./frontend
     depends_on:
       - backend
 
   backend:
-    image: cyber-bay-backend-legacy:latest
+    image: three-tier-backend-legacy:latest
     container_name: legacy-backend
     build: ./backend
     ports:
@@ -20,7 +20,7 @@ services:
       POSTGRES_PASSWORD: password
 
   db:
-    image: cyber-bay-db-legacy:latest
+    image: three-tier-db-legacy:latest
     container_name: legacy-db
     build:
       context: ./db
@@ -42,7 +42,7 @@ services:
       - "5432:5432"
 
   nginx:
-    image: cyber-bay-nginx-legacy:latest
+    image: three-tier-nginx-legacy:latest
     container_name: legacy-nginx
     build:
       context: .
@@ -52,3 +52,7 @@ services:
     depends_on:
       - frontend
       - backend
+
+networks:
+  default:
+    name: three-tier-app_default

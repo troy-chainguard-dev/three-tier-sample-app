@@ -37,10 +37,10 @@ class VulnerabilityScanner:
     
     # Images to categorize as Chainguard
     CHAINGUARD_PATTERNS = [
-        "cyber-bay-nginx-cg",
-        "cyber-bay-frontend-cg",
-        "cyber-bay-backend-cg",
-        "cyber-bay-db-cg",
+        "three-tier-nginx-cg",
+        "three-tier-frontend-cg",
+        "three-tier-backend-cg",
+        "three-tier-db-cg",
         "cgr.dev/chainguard"
     ]
     
