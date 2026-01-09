@@ -19,6 +19,7 @@ import argparse
 import json
 import subprocess
 import sys
+import shutil
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict, Counter
@@ -1303,23 +1304,30 @@ class VulnerabilityScanner:
         print(f"   ✅ Comparison report saved: {output_file}")
     
     def generate_html_comparison_report(self):
-        """Generate HTML comparison report if both result sets exist."""
-        if not self.legacy_results or not self.chainguard_results:
+        """Generate HTML comparison report if both CSV files exist."""
+        legacy_csv = self.output_dir / 'grype-legacy-images.csv'
+        cg_csv = self.output_dir / 'grype-chainguard-images.csv'
+        
+        if not legacy_csv.exists() or not cg_csv.exists():
             return
         
         print("\n🌐 Generating HTML comparison report...")
         
+        # Load both datasets from CSV files (not from in-memory results)
+        legacy_data = self._load_csv(legacy_csv)
+        cg_data = self._load_csv(cg_csv)
+        
         # Calculate stats
         legacy_stats = {
-            'total': len(self.legacy_results),
-            'by_severity': Counter(d['Severity'] for d in self.legacy_results),
-            'unique_cves': len(set(d['Vulnerability'] for d in self.legacy_results)),
+            'total': len(legacy_data),
+            'by_severity': Counter(d['Severity'] for d in legacy_data),
+            'unique_cves': len(set(d['Vulnerability'] for d in legacy_data)),
         }
         
         cg_stats = {
-            'total': len(self.chainguard_results),
-            'by_severity': Counter(d['Severity'] for d in self.chainguard_results),
-            'unique_cves': len(set(d['Vulnerability'] for d in self.chainguard_results)),
+            'total': len(cg_data),
+            'by_severity': Counter(d['Severity'] for d in cg_data),
+            'unique_cves': len(set(d['Vulnerability'] for d in cg_data)),
         }
         
         filepath = self.output_dir / f"comparison-report-{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
@@ -1645,26 +1653,50 @@ class VulnerabilityScanner:
         with open(filepath, 'w') as f:
             f.write(html)
         
+        # Create a symlink/copy to a predictable filename for easy access
+        latest_link = self.output_dir / 'comparison-report-latest.html'
+        try:
+            # Remove old symlink/file if it exists
+            if latest_link.exists() or latest_link.is_symlink():
+                latest_link.unlink()
+            # Create symlink (or copy if symlink not supported)
+            try:
+                latest_link.symlink_to(filepath.name)
+            except (OSError, NotImplementedError):
+                # Fallback: copy the file if symlinks aren't supported
+                shutil.copy2(filepath, latest_link)
+        except Exception:
+            # If symlink/copy fails, just continue
+            pass
+        
         print(f"   ✅ HTML comparison report saved: {filepath}")
+        print(f"   ✅ Also available at: {latest_link}")
     
     def generate_text_comparison_report(self):
-        """Generate text comparison report if both result sets exist."""
-        if not self.legacy_results or not self.chainguard_results:
+        """Generate text comparison report if both CSV files exist."""
+        legacy_csv = self.output_dir / 'grype-legacy-images.csv'
+        cg_csv = self.output_dir / 'grype-chainguard-images.csv'
+        
+        if not legacy_csv.exists() or not cg_csv.exists():
             return
         
         print("\n📄 Generating text comparison report...")
         
+        # Load both datasets from CSV files (not from in-memory results)
+        legacy_data = self._load_csv(legacy_csv)
+        cg_data = self._load_csv(cg_csv)
+        
         # Calculate stats
         legacy_stats = {
-            'total': len(self.legacy_results),
-            'by_severity': Counter(d['Severity'] for d in self.legacy_results),
-            'unique_cves': len(set(d['Vulnerability'] for d in self.legacy_results)),
+            'total': len(legacy_data),
+            'by_severity': Counter(d['Severity'] for d in legacy_data),
+            'unique_cves': len(set(d['Vulnerability'] for d in legacy_data)),
         }
         
         cg_stats = {
-            'total': len(self.chainguard_results),
-            'by_severity': Counter(d['Severity'] for d in self.chainguard_results),
-            'unique_cves': len(set(d['Vulnerability'] for d in self.chainguard_results)),
+            'total': len(cg_data),
+            'by_severity': Counter(d['Severity'] for d in cg_data),
+            'unique_cves': len(set(d['Vulnerability'] for d in cg_data)),
         }
         
         filepath = self.output_dir / f"comparison-report-{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
@@ -1755,7 +1787,24 @@ class VulnerabilityScanner:
             f.write("END OF COMPARISON REPORT\n".center(80))
             f.write("=" * 80 + "\n")
         
+        # Create a symlink/copy to a predictable filename for easy access
+        latest_link = self.output_dir / 'comparison-report-latest.txt'
+        try:
+            # Remove old symlink/file if it exists
+            if latest_link.exists() or latest_link.is_symlink():
+                latest_link.unlink()
+            # Create symlink (or copy if symlink not supported)
+            try:
+                latest_link.symlink_to(filepath.name)
+            except (OSError, NotImplementedError):
+                # Fallback: copy the file if symlinks aren't supported
+                shutil.copy2(filepath, latest_link)
+        except Exception:
+            # If symlink/copy fails, just continue
+            pass
+        
         print(f"   ✅ Text comparison report saved: {filepath}")
+        print(f"   ✅ Also available at: {latest_link}")
     
     def _load_csv(self, filepath: Path) -> List[Dict]:
         """Load CSV file into list of dicts."""
