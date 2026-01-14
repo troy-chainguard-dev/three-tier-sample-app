@@ -17,6 +17,7 @@ Features:
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import shutil
@@ -171,6 +172,39 @@ class VulnerabilityScanner:
         """Check if image matches Chainguard patterns."""
         return any(pattern in image_name for pattern in self.CHAINGUARD_PATTERNS)
     
+    def get_docker_host(self) -> Optional[str]:
+        """Get the DOCKER_HOST environment variable or detect the Docker socket."""
+        # First check if DOCKER_HOST is already set
+        docker_host = os.environ.get('DOCKER_HOST')
+        if docker_host:
+            return docker_host
+        
+        # Try to detect Docker socket location using docker context
+        try:
+            result = subprocess.run(
+                ['docker', 'context', 'inspect', '--format', '{{.Endpoints.docker.Host}}'],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+        except Exception:
+            pass
+        
+        # Common Docker socket locations
+        socket_paths = [
+            Path.home() / '.docker' / 'run' / 'docker.sock',  # Docker Desktop macOS
+            Path('/var/run/docker.sock'),  # Linux default
+        ]
+        
+        for socket_path in socket_paths:
+            if socket_path.exists():
+                return f'unix://{socket_path}'
+        
+        return None
+    
     def scan_image(self, image_name: str) -> List[Dict]:
         """Scan an image with Grype and return vulnerabilities."""
         platform = self.get_image_platform(image_name)
@@ -178,14 +212,32 @@ class VulnerabilityScanner:
         print(f"   Scanning: {image_name}{platform_info}")
         
         try:
+            # Note: Don't use check=True because grype returns exit code 1 when
+            # vulnerabilities are found, which is expected behavior, not an error.
+            # Exit codes: 0 = no vulns, 1 = vulns found, other = actual error
+            # Use 'docker:' prefix to explicitly tell grype to use the Docker daemon
+            
+            # Set up environment with DOCKER_HOST if we can detect it
+            env = os.environ.copy()
+            docker_host = self.get_docker_host()
+            if docker_host:
+                env['DOCKER_HOST'] = docker_host
+            
             result = subprocess.run(
-                ['grype', image_name, '-o', 'json'],
+                ['grype', f'docker:{image_name}', '-o', 'json'],
                 capture_output=True,
                 text=True,
                 encoding='utf-8',
                 errors='replace',
-                check=True
+                env=env
             )
+            
+            # Check for actual errors (not exit code 1 which means vulns found)
+            if result.returncode not in (0, 1):
+                print(f"      ⚠️  Error scanning {image_name}: grype exited with code {result.returncode}")
+                if result.stderr:
+                    print(f"         {result.stderr.strip()}")
+                return []
             
             data = json.loads(result.stdout)
             vulnerabilities = []
@@ -206,11 +258,12 @@ class VulnerabilityScanner:
             
             return vulnerabilities
             
-        except subprocess.CalledProcessError as e:
-            print(f"      ⚠️  Error scanning {image_name}: {e}")
-            return []
         except json.JSONDecodeError as e:
             print(f"      ⚠️  Error parsing Grype output for {image_name}: {e}")
+            if result.stderr:
+                print(f"         stderr: {result.stderr.strip()}")
+            if not result.stdout:
+                print(f"         stdout was empty")
             return []
     
     def scan_all_containers(self):
